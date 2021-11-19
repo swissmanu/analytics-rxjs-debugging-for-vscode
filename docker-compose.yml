@@ -4,6 +4,7 @@ services:
   caddy:
     container_name: posthog_caddy
     image: lucaslorentz/caddy-docker-proxy:ci-alpine
+    restart: unless-stopped
     ports:
       - 80:80
       - 443:443
@@ -14,11 +15,11 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${CADDY_LOCAL_VOLUME}:/data
-    restart: unless-stopped
 
   db:
     container_name: posthog_db
     image: postgres:13-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_POSTGRES_DB}
       POSTGRES_USER: ${DB_POSTGRES_USER}
@@ -36,12 +37,14 @@ services:
   redis:
     container_name: posthog_redis
     image: redis:6-alpine
+    restart: unless-stopped
     networks:
       - posthog
 
   web:
     container_name: posthog_web
     image: posthog/posthog:${WEB_VERSION}
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
@@ -53,6 +56,13 @@ services:
       IS_BEHIND_PROXY: True
       TRUST_ALL_PROXIES: True
       DISABLE_PAID_FEATURE_SHOWCASING: True
+      EMAIL_HOST: ${WEB_EMAIL_HOST}
+      EMAIL_PORT: ${WEB_EMAIL_PORT}
+      EMAIL_HOST_USER: ${WEB_EMAIL_HOST_USER}
+      EMAIL_HOST_PASSWORD: ${WEB_EMAIL_HOST_PASSWORD}
+      EMAIL_USE_TLS: ${WEB_EMAIL_USE_TLS}
+      EMAIL_USE_SSL: ${WEB_EMAIL_USE_SSL}
+      EMAIL_DEFAULT_FROM: ${WEB_EMAIL_DEFAULT_FROM}
     links:
       - db:db
       - redis:redis
