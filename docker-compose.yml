@@ -1,6 +1,21 @@
 version: '3'
 
 services:
+  caddy:
+    container_name: posthog_caddy
+    image: lucaslorentz/caddy-docker-proxy:ci-alpine
+    ports:
+      - 80:80
+      - 443:443
+    environment:
+      - CADDY_INGRESS_NETWORKS=caddy
+    networks:
+      - caddy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${CADDY_LOCAL_VOLUME}:/data
+    restart: unless-stopped
+
   db:
     container_name: posthog_db
     image: postgres:13-alpine
@@ -9,16 +24,20 @@ services:
       POSTGRES_USER: ${DB_POSTGRES_USER}
       POSTGRES_PASSWORD: ${DB_POSTGRES_PASSWORD}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - posthog
     volumes:
       - ${DB_LOCAL_VOLUME}:/var/lib/postgresql/data
 
   redis:
     container_name: posthog_redis
     image: redis:6-alpine
+    networks:
+      - posthog
 
   web:
     container_name: posthog_web
@@ -30,9 +49,21 @@ services:
       DATABASE_URL: postgres://${DB_POSTGRES_USER}:${DB_POSTGRES_PASSWORD}@db:5432/${DB_POSTGRES_DB}
       REDIS_URL: redis://redis:6379/
       SECRET_KEY: ${WEB_SECRET_KEY}
-      DISABLE_SECURE_SSL_REDIRECT: 'true'
+      SITE_URL: https://${WEB_DOMAIN}
+      IS_BEHIND_PROXY: True
+      TRUST_ALL_PROXIES: True
+      DISABLE_PAID_FEATURE_SHOWCASING: True
     links:
       - db:db
       - redis:redis
-    ports:
-      - 3000:8000
+    networks:
+      - caddy
+      - posthog
+    labels:
+      caddy: ${WEB_DOMAIN}
+      caddy.reverse_proxy: "{{upstreams 8000}}"
+
+networks:
+  posthog:
+  caddy:
+    external: true
