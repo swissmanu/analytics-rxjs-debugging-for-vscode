@@ -56,13 +56,6 @@ services:
       IS_BEHIND_PROXY: True
       TRUST_ALL_PROXIES: True
       DISABLE_PAID_FEATURE_SHOWCASING: True
-      EMAIL_HOST: ${WEB_EMAIL_HOST}
-      EMAIL_PORT: ${WEB_EMAIL_PORT}
-      EMAIL_HOST_USER: ${WEB_EMAIL_HOST_USER}
-      EMAIL_HOST_PASSWORD: ${WEB_EMAIL_HOST_PASSWORD}
-      EMAIL_USE_TLS: ${WEB_EMAIL_USE_TLS}
-      EMAIL_USE_SSL: ${WEB_EMAIL_USE_SSL}
-      EMAIL_DEFAULT_FROM: ${WEB_EMAIL_DEFAULT_FROM}
     links:
       - db:db
       - redis:redis
@@ -71,7 +64,7 @@ services:
       - posthog
     labels:
       caddy: ${WEB_DOMAIN}
-      caddy.reverse_proxy: "{{upstreams 8000}}"
+      caddy.reverse_proxy: '{{upstreams 8000}}'
 
 networks:
   posthog:
